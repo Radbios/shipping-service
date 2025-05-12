@@ -7,55 +7,99 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# Shipping Service - Sistema de E-commerce com Microsserviços
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Este microsserviço é responsável por **calcular o valor do frete** com base no endereço de destino informado pelo usuário. Ele faz parte do sistema de e-commerce distribuído em arquitetura de microsserviços e se comunica com o API Gateway para integrar-se ao restante da aplicação.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Função
 
-## Learning Laravel
+Este serviço realiza o cálculo de opções de frete utilizando a API pública da plataforma [Melhor Envio](https://www.melhorenvio.com.br/), com base em:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+* CEP de origem fixo (sede da loja)
+* CEP de destino fornecido na requisição
+* Informações padrão do pacote (dimensões e peso)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🛠️ Tecnologias Utilizadas
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+* **PHP 8.2+**
+* **Laravel 11**
+* **Laravel HTTP Client** para requisições externas
+* **Melhor Envio API** para simulação de frete
 
-## Laravel Sponsors
+## Autenticação
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+As requisições ao serviço de frete exigem um **token de acesso** (`SHIPPING_TOKEN`) e um **User-Agent válido** (`EMAIL`), configurados no arquivo `.env`.
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+## Integração com o Gateway
 
-## Contributing
+O serviço é acessado através do API Gateway pela seguinte rota:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+POST /api/service/shipping/shipping
+```
 
-## Code of Conduct
+### Corpo da Requisição
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```json
+{
+  "postal_code": "CEP_de_destino"
+}
+```
 
-## Security Vulnerabilities
+### Exemplo de Requisição via Gateway
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+curl -X POST http://localhost:8000/api/service/shipping/shipping \
+     -H "Authorization: Bearer <token>" \
+     -H "Content-Type: application/json" \
+     -d '{"postal_code": "01001000"}'
+```
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Estrutura Principal
+
+| Arquivo                  | Descrição                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `ShippingController.php` | Controlador principal. Repassa os dados à API externa e retorna as opções de frete. |
+| `ShippingRequest.php`    | Classe de validação que garante a presença do `postal_code`.                        |
+| `ShippingResource.php`   | Recurso padrão do Laravel para formatação de resposta (não customizado).            |
+
+---
+
+## Requisitos
+
+* PHP 8.2+
+* Laravel 11
+* Token de acesso válido do [Melhor Envio](https://www.melhorenvio.com.br/)
+* Email configurado como User-Agent no `.env`
+
+---
+
+## Exemplo de Retorno
+
+```json
+[
+  {
+    "company": "Correios",
+    "name": "PAC",
+    "price": 22.90,
+    "delivery_time": "7 dias úteis"
+  },
+  ...
+]
+```
+
+---
+
+## Dependência Externa
+
+Este microsserviço depende diretamente da **API do Melhor Envio**, sendo ideal para ambientes de teste e simulação de valores reais de entrega.
+
+---
+
+

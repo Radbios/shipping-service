@@ -7,13 +7,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ShippingResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
+    // Estrutura opcional para formatar a resposta do cálculo de frete (não utilizado diretamente)
     public function toArray(Request $request): array
     {
+        // Retorna os dados como estão, sem modificação
         return parent::toArray($request);
     }
 }
+
